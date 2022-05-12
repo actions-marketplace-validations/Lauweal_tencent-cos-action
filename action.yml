@@ -1,4 +1,4 @@
-name: 'New Tencent Cloud COS Action'
+name: 'tencent-cos-action'
 description: 'Upload files to Tencent Cloud COS'
 branding:
   icon: 'upload-cloud'
