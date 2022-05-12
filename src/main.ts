@@ -23,8 +23,13 @@ async function walk(path: string, callback: (path: string) => void) {
   }
 }
 
-const uploadFileToCOS = (cos: IOptions, path: string) => {
+const uploadFileToCOS = async (cos: IOptions, path: string) => {
   core.info(`UPLOAD FILE ----> ${path}`)
+  const status = await fs.promises.lstat(cos.localPath)
+  let localPath = cos.localPath
+  if (!status.isDirectory()) {
+    localPath = localPath.replace(path, '')
+  }
   return new Promise((resolve, reject) => {
     cos.cli.putObject(
       {
@@ -32,7 +37,7 @@ const uploadFileToCOS = (cos: IOptions, path: string) => {
         Region: cos.region,
         Key: _path.join(cos.remotePath, path),
         StorageClass: 'STANDARD',
-        Body: fs.createReadStream(_path.join(cos.localPath, path))
+        Body: fs.createReadStream(_path.join(localPath, path))
       },
       function (err, data) {
         if (err) {

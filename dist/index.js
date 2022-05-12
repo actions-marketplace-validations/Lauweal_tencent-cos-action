@@ -72,15 +72,20 @@ function walk(path, callback) {
         }
     });
 }
-const uploadFileToCOS = (cos, path) => {
+const uploadFileToCOS = (cos, path) => __awaiter(void 0, void 0, void 0, function* () {
     core.info(`UPLOAD FILE ----> ${path}`);
+    const status = yield fs_1.default.promises.lstat(cos.localPath);
+    let localPath = cos.localPath;
+    if (!status.isDirectory()) {
+        localPath = localPath.replace(path, '');
+    }
     return new Promise((resolve, reject) => {
         cos.cli.putObject({
             Bucket: cos.bucket,
             Region: cos.region,
             Key: path_1.default.join(cos.remotePath, path),
             StorageClass: 'STANDARD',
-            Body: fs_1.default.createReadStream(path_1.default.join(cos.localPath, path))
+            Body: fs_1.default.createReadStream(path_1.default.join(localPath, path))
         }, function (err, data) {
             if (err) {
                 return reject(err);
@@ -90,7 +95,7 @@ const uploadFileToCOS = (cos, path) => {
             }
         });
     });
-};
+});
 const deleteFileFromCOS = (cos, path) => {
     return new Promise((resolve, reject) => {
         cos.cli.deleteObject({
