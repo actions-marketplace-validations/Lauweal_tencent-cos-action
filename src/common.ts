@@ -4,14 +4,26 @@ import COS from 'cos-nodejs-sdk-v5'
 import {IOptions} from './interface'
 
 export async function walk(path: string, callback: (path: string) => void) {
-  const status = await fs.promises.lstat(path)
-  if (!status.isDirectory()) {
+  if (path.includes('.') || !fs.statSync(path).isDirectory()) {
     return await callback(path)
   }
   const dir = await fs.promises.opendir(path)
   for await (const dirent of dir) {
     await walk(_path.join(path, dirent.name), callback)
   }
+}
+
+export async function walKRemote(
+  cos: IOptions,
+  path: string,
+  callback: (path: string) => void
+) {
+  if (path.includes('.') || !fs.statSync(path).isDirectory()) {
+    const {Contents} = await listFilesOnCOS({...cos, remotePath: path})
+    return await callback(path)
+  }
+  const {Contents} = await listFilesOnCOS({...cos, remotePath: path})
+  await Promise.allSettled(Contents.map(c => walKRemote(cos, c.Key, callback)))
 }
 
 export const collectLocalFiles = async (cos: IOptions) => {
@@ -46,24 +58,9 @@ export const collectRemoteFiles = async (cos: IOptions) => {
   const files = new Set<string>()
   let data: COS.GetBucketResult
   let nextMarker = null
-
-  do {
-    data = await listFilesOnCOS(cos)
-    let len = cos.remotePath.length
-    if (!!_path.extname(cos.remotePath)) {
-      let remotePaths = cos.remotePath.split('/')
-      remotePaths.pop()
-      len = remotePaths.join('/').length
-    }
-    for (const e of data.Contents) {
-      let p = e.Key.substring(len)
-      for (; p[0] === '/'; ) {
-        p = p.substring(1)
-      }
-      files.add(p)
-    }
-    nextMarker = data.NextMarker
-  } while (data.IsTruncated === 'true')
+  await walKRemote(cos, cos.remotePath, path => {
+    files.add(path.split(_path.sep).pop() as string)
+  })
 
   return files
 }
@@ -74,7 +71,7 @@ export const findDeletedFiles = (
 ) => {
   const deletedFiles = new Set<string>()
   for (const file of remoteFiles) {
-    if (!localFiles.has(file)) {
+    if (localFiles.has(file)) {
       deletedFiles.add(file)
     }
   }

@@ -26,14 +26,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.findDeletedFiles = exports.collectRemoteFiles = exports.listFilesOnCOS = exports.collectLocalFiles = exports.walk = void 0;
+exports.findDeletedFiles = exports.collectRemoteFiles = exports.listFilesOnCOS = exports.collectLocalFiles = exports.walKRemote = exports.walk = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const path_1 = __importDefault(__nccwpck_require__(5622));
 function walk(path, callback) {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const status = yield fs_1.default.promises.lstat(path);
-        if (!status.isDirectory()) {
+        if (path.includes('.') || !fs_1.default.statSync(path).isDirectory()) {
             return yield callback(path);
         }
         const dir = yield fs_1.default.promises.opendir(path);
@@ -53,6 +52,17 @@ function walk(path, callback) {
     });
 }
 exports.walk = walk;
+function walKRemote(cos, path, callback) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (path.includes('.') || !fs_1.default.statSync(path).isDirectory()) {
+            const { Contents } = yield (0, exports.listFilesOnCOS)(Object.assign(Object.assign({}, cos), { remotePath: path }));
+            return yield callback(path);
+        }
+        const { Contents } = yield (0, exports.listFilesOnCOS)(Object.assign(Object.assign({}, cos), { remotePath: path }));
+        yield Promise.allSettled(Contents.map(c => walKRemote(cos, c.Key, callback)));
+    });
+}
+exports.walKRemote = walKRemote;
 const collectLocalFiles = (cos) => __awaiter(void 0, void 0, void 0, function* () {
     const root = cos.localPath;
     const files = new Set();
@@ -83,30 +93,16 @@ const collectRemoteFiles = (cos) => __awaiter(void 0, void 0, void 0, function* 
     const files = new Set();
     let data;
     let nextMarker = null;
-    do {
-        data = yield (0, exports.listFilesOnCOS)(cos);
-        let len = cos.remotePath.length;
-        if (!!path_1.default.extname(cos.remotePath)) {
-            let remotePaths = cos.remotePath.split('/');
-            remotePaths.pop();
-            len = remotePaths.join('/').length;
-        }
-        for (const e of data.Contents) {
-            let p = e.Key.substring(len);
-            for (; p[0] === '/';) {
-                p = p.substring(1);
-            }
-            files.add(p);
-        }
-        nextMarker = data.NextMarker;
-    } while (data.IsTruncated === 'true');
+    yield walKRemote(cos, cos.remotePath, path => {
+        files.add(path.split(path_1.default.sep).pop());
+    });
     return files;
 });
 exports.collectRemoteFiles = collectRemoteFiles;
 const findDeletedFiles = (localFiles, remoteFiles) => {
     const deletedFiles = new Set();
     for (const file of remoteFiles) {
-        if (!localFiles.has(file)) {
+        if (localFiles.has(file)) {
             deletedFiles.add(file);
         }
     }
@@ -162,7 +158,7 @@ const common_1 = __nccwpck_require__(6979);
 const dowloadFileFormCOS = (cos, path) => __awaiter(void 0, void 0, void 0, function* () {
     core.info(`DOWLOAD FILE ----> ${path}`);
     let remotePath = cos.remotePath;
-    if (!!path_1.default.extname(remotePath)) {
+    if (path.includes('.')) {
         remotePath = remotePath.replace(path, '');
     }
     const remoteFilePath = path_1.default.join(remotePath, path);
@@ -369,9 +365,8 @@ const path_1 = __importDefault(__nccwpck_require__(5622));
 const common_1 = __nccwpck_require__(6979);
 const uploadFileToCOS = (cos, path) => __awaiter(void 0, void 0, void 0, function* () {
     core.info(`UPLOAD FILE ----> ${path}`);
-    const status = yield fs_1.default.promises.lstat(cos.localPath);
     let localPath = cos.localPath;
-    if (!status.isDirectory()) {
+    if (localPath.includes('.')) {
         localPath = localPath.replace(path, '');
     }
     return new Promise((resolve, reject) => {

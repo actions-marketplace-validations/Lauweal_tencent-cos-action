@@ -7,7 +7,7 @@ import {IOptions} from './interface'
 const dowloadFileFormCOS = async (cos: IOptions, path: string) => {
   core.info(`DOWLOAD FILE ----> ${path}`)
   let remotePath = cos.remotePath
-  if (!!_path.extname(remotePath)) {
+  if (path.includes('.')) {
     remotePath = remotePath.replace(path, '')
   }
 

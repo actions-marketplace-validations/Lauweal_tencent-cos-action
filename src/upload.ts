@@ -11,9 +11,8 @@ import {IOptions} from './interface'
 
 const uploadFileToCOS = async (cos: IOptions, path: string) => {
   core.info(`UPLOAD FILE ----> ${path}`)
-  const status = await fs.promises.lstat(cos.localPath)
   let localPath = cos.localPath
-  if (!status.isDirectory()) {
+  if (localPath.includes('.')) {
     localPath = localPath.replace(path, '')
   }
   return new Promise((resolve, reject) => {
