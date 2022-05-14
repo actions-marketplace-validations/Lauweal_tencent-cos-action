@@ -1,6 +1,254 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 6979:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.findDeletedFiles = exports.collectRemoteFiles = exports.listFilesOnCOS = exports.collectLocalFiles = exports.walk = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(5747));
+const path_1 = __importDefault(__nccwpck_require__(5622));
+function walk(path, callback) {
+    var e_1, _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const status = yield fs_1.default.promises.lstat(path);
+        if (!status.isDirectory()) {
+            return yield callback(path);
+        }
+        const dir = yield fs_1.default.promises.opendir(path);
+        try {
+            for (var dir_1 = __asyncValues(dir), dir_1_1; dir_1_1 = yield dir_1.next(), !dir_1_1.done;) {
+                const dirent = dir_1_1.value;
+                yield walk(path_1.default.join(path, dirent.name), callback);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (dir_1_1 && !dir_1_1.done && (_a = dir_1.return)) yield _a.call(dir_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+    });
+}
+exports.walk = walk;
+const collectLocalFiles = (cos) => __awaiter(void 0, void 0, void 0, function* () {
+    const root = cos.localPath;
+    const files = new Set();
+    yield walk(root, path => {
+        files.add(path.split(path_1.default.sep).pop());
+    });
+    return files;
+});
+exports.collectLocalFiles = collectLocalFiles;
+const listFilesOnCOS = (cos) => {
+    return new Promise((resolve, reject) => {
+        cos.cli.getBucket({
+            Bucket: cos.bucket,
+            Region: cos.region,
+            Prefix: cos.remotePath
+        }, function (err, data) {
+            if (err) {
+                return reject(err);
+            }
+            else {
+                return resolve(data);
+            }
+        });
+    });
+};
+exports.listFilesOnCOS = listFilesOnCOS;
+const collectRemoteFiles = (cos) => __awaiter(void 0, void 0, void 0, function* () {
+    const files = new Set();
+    let data;
+    let nextMarker = null;
+    do {
+        data = yield (0, exports.listFilesOnCOS)(cos);
+        let len = cos.remotePath.length;
+        if (!!path_1.default.extname(cos.remotePath)) {
+            let remotePaths = cos.remotePath.split('/');
+            remotePaths.pop();
+            len = remotePaths.join('/').length;
+        }
+        for (const e of data.Contents) {
+            let p = e.Key.substring(len);
+            for (; p[0] === '/';) {
+                p = p.substring(1);
+            }
+            files.add(p);
+        }
+        nextMarker = data.NextMarker;
+    } while (data.IsTruncated === 'true');
+    return files;
+});
+exports.collectRemoteFiles = collectRemoteFiles;
+const findDeletedFiles = (localFiles, remoteFiles) => {
+    const deletedFiles = new Set();
+    for (const file of remoteFiles) {
+        if (!localFiles.has(file)) {
+            deletedFiles.add(file);
+        }
+    }
+    return deletedFiles;
+};
+exports.findDeletedFiles = findDeletedFiles;
+
+
+/***/ }),
+
+/***/ 8234:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dowload = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const path_1 = __importDefault(__nccwpck_require__(5622));
+const fs_1 = __importDefault(__nccwpck_require__(5747));
+const common_1 = __nccwpck_require__(6979);
+const dowloadFileFormCOS = (cos, path) => __awaiter(void 0, void 0, void 0, function* () {
+    core.info(`DOWLOAD FILE ----> ${path}`);
+    let remotePath = cos.remotePath;
+    if (!!path_1.default.extname(remotePath)) {
+        remotePath = remotePath.replace(path, '');
+    }
+    const remoteFilePath = path_1.default.join(remotePath, path);
+    const localFilePath = path_1.default.join(cos.localPath, path);
+    return new Promise((resolve, reject) => {
+        fs_1.default.writeFileSync(path_1.default.join(cos.localPath, path), '');
+        cos.cli.getObject({
+            Bucket: cos.bucket,
+            Region: cos.region,
+            Key: remoteFilePath,
+            Output: fs_1.default.createWriteStream(localFilePath, {
+                flags: 'w'
+            })
+        }, function (err, data) {
+            if (err) {
+                return reject(err);
+            }
+            else {
+                return resolve(data);
+            }
+        });
+    });
+});
+const dowloadFiles = (cos, localFiles) => __awaiter(void 0, void 0, void 0, function* () {
+    const size = localFiles.size;
+    let index = 0;
+    let percent = 0;
+    for (const file of localFiles) {
+        yield dowloadFileFormCOS(cos, file);
+        index++;
+        percent = parseInt(((index / size) * 100));
+        console.log(`>> [${index}/${size}, ${percent}%] uploaded ${path_1.default.join(cos.localPath, file)}`);
+    }
+});
+const deleteFileFromLocal = (cos, path) => {
+    return new Promise((resolve, reject) => {
+        fs_1.default.unlink(path_1.default.join(cos.localPath, path), err => {
+            if (err) {
+                return reject(err);
+            }
+            else {
+                return resolve(true);
+            }
+        });
+    });
+};
+const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0, function* () {
+    const size = deleteFiles.size;
+    let index = 0;
+    let percent = 0;
+    for (const file of deleteFiles) {
+        yield deleteFileFromLocal(cos, file);
+        index++;
+        percent = parseInt(((index / size) * 100));
+        console.log(`>> [${index}/${size}, ${percent}%] cleaned ${path_1.default.join(cos.localPath, file)}`);
+    }
+});
+function dowload(cos) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const remoteFiles = yield (0, common_1.collectRemoteFiles)(cos);
+        if (!fs_1.default.existsSync(cos.localPath)) {
+            fs_1.default.mkdirSync(cos.localPath, { recursive: true });
+        }
+        console.log(remoteFiles.size, 'files to be dowload');
+        let cleanedFilesCount = 0;
+        if (cos.clean) {
+            const localFiles = yield (0, common_1.collectLocalFiles)(cos);
+            const deletedFiles = (0, common_1.findDeletedFiles)(remoteFiles, localFiles);
+            if (deletedFiles.size > 0) {
+                console.log(`${deletedFiles.size} files to be cleaned`);
+            }
+            yield cleanDeleteFiles(cos, deletedFiles);
+            cleanedFilesCount = deletedFiles.size;
+        }
+        yield dowloadFiles(cos, remoteFiles);
+        let cleanedFilesMessage = '';
+        if (cleanedFilesCount > 0) {
+            cleanedFilesMessage = `, cleaned ${cleanedFilesCount} files`;
+        }
+    });
+}
+exports.dowload = dowload;
+
+
+/***/ }),
+
 /***/ 3109:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -34,44 +282,91 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const cos_nodejs_sdk_v5_1 = __importDefault(__nccwpck_require__(598));
-const fs_1 = __importDefault(__nccwpck_require__(5747));
 const path_1 = __importDefault(__nccwpck_require__(5622));
-function walk(path, callback) {
-    var e_1, _a;
+const upload_1 = __nccwpck_require__(4831);
+const dowload_1 = __nccwpck_require__(8234);
+function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const status = yield fs_1.default.promises.lstat(path);
-        if (!status.isDirectory()) {
-            return yield callback(path);
+        const cos = {
+            cli: new cos_nodejs_sdk_v5_1.default({
+                SecretId: core.getInput('secret_id'),
+                SecretKey: core.getInput('secret_key'),
+                Domain: core.getInput('accelerate') === 'true'
+                    ? '{Bucket}.cos.accelerate.myqcloud.com'
+                    : undefined
+            }),
+            type: core.getInput('type'),
+            bucket: core.getInput('cos_bucket'),
+            region: core.getInput('cos_region'),
+            localPath: path_1.default.join(process.cwd(), core.getInput('local_path')),
+            remotePath: core.getInput('remote_path'),
+            clean: core.getInput('clean') === 'true'
+        };
+        if (cos.type === 'upload') {
+            (0, upload_1.upload)(cos).catch(reason => {
+                core.setFailed(`fail to upload files to cos: ${reason.message}`);
+            });
         }
-        const dir = yield fs_1.default.promises.opendir(path);
-        try {
-            for (var dir_1 = __asyncValues(dir), dir_1_1; dir_1_1 = yield dir_1.next(), !dir_1_1.done;) {
-                const dirent = dir_1_1.value;
-                yield walk(path_1.default.join(path, dirent.name), callback);
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (dir_1_1 && !dir_1_1.done && (_a = dir_1.return)) yield _a.call(dir_1);
-            }
-            finally { if (e_1) throw e_1.error; }
+        else {
+            (0, dowload_1.dowload)(cos).catch(reason => {
+                core.setFailed(`fail to dowload files to cos: ${reason.message}`);
+            });
         }
     });
 }
+run();
+
+
+/***/ }),
+
+/***/ 4831:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.upload = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const fs_1 = __importDefault(__nccwpck_require__(5747));
+const path_1 = __importDefault(__nccwpck_require__(5622));
+const common_1 = __nccwpck_require__(6979);
 const uploadFileToCOS = (cos, path) => __awaiter(void 0, void 0, void 0, function* () {
     core.info(`UPLOAD FILE ----> ${path}`);
     const status = yield fs_1.default.promises.lstat(cos.localPath);
@@ -112,30 +407,6 @@ const deleteFileFromCOS = (cos, path) => {
         });
     });
 };
-const listFilesOnCOS = (cos) => {
-    return new Promise((resolve, reject) => {
-        cos.cli.getBucket({
-            Bucket: cos.bucket,
-            Region: cos.region,
-            Prefix: cos.remotePath
-        }, function (err, data) {
-            if (err) {
-                return reject(err);
-            }
-            else {
-                return resolve(data);
-            }
-        });
-    });
-};
-const collectLocalFiles = (cos) => __awaiter(void 0, void 0, void 0, function* () {
-    const root = cos.localPath;
-    const files = new Set();
-    yield walk(root, path => {
-        files.add(path.split(path_1.default.sep).pop());
-    });
-    return files;
-});
 const uploadFiles = (cos, localFiles) => __awaiter(void 0, void 0, void 0, function* () {
     const size = localFiles.size;
     let index = 0;
@@ -147,32 +418,6 @@ const uploadFiles = (cos, localFiles) => __awaiter(void 0, void 0, void 0, funct
         console.log(`>> [${index}/${size}, ${percent}%] uploaded ${path_1.default.join(cos.localPath, file)}`);
     }
 });
-const collectRemoteFiles = (cos) => __awaiter(void 0, void 0, void 0, function* () {
-    const files = new Set();
-    let data;
-    let nextMarker = null;
-    do {
-        data = yield listFilesOnCOS(cos);
-        for (const e of data.Contents) {
-            let p = e.Key.substring(cos.remotePath.length);
-            for (; p[0] === '/';) {
-                p = p.substring(1);
-            }
-            files.add(p);
-        }
-        nextMarker = data.NextMarker;
-    } while (data.IsTruncated === 'true');
-    return files;
-});
-const findDeletedFiles = (localFiles, remoteFiles) => {
-    const deletedFiles = new Set();
-    for (const file of remoteFiles) {
-        if (!localFiles.has(file)) {
-            deletedFiles.add(file);
-        }
-    }
-    return deletedFiles;
-};
 const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0, function* () {
     const size = deleteFiles.size;
     let index = 0;
@@ -184,14 +429,14 @@ const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0,
         console.log(`>> [${index}/${size}, ${percent}%] cleaned ${path_1.default.join(cos.remotePath, file)}`);
     }
 });
-const process = (cos) => __awaiter(void 0, void 0, void 0, function* () {
-    const localFiles = yield collectLocalFiles(cos);
+const upload = (cos) => __awaiter(void 0, void 0, void 0, function* () {
+    const localFiles = yield (0, common_1.collectLocalFiles)(cos);
     console.log(localFiles.size, 'files to be uploaded');
     yield uploadFiles(cos, localFiles);
     let cleanedFilesCount = 0;
     if (cos.clean) {
-        const remoteFiles = yield collectRemoteFiles(cos);
-        const deletedFiles = findDeletedFiles(localFiles, remoteFiles);
+        const remoteFiles = yield (0, common_1.collectRemoteFiles)(cos);
+        const deletedFiles = (0, common_1.findDeletedFiles)(localFiles, remoteFiles);
         if (deletedFiles.size > 0) {
             console.log(`${deletedFiles.size} files to be cleaned`);
         }
@@ -204,28 +449,7 @@ const process = (cos) => __awaiter(void 0, void 0, void 0, function* () {
     }
     console.log(`uploaded ${localFiles.size} files${cleanedFilesMessage}`);
 });
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const cos = {
-            cli: new cos_nodejs_sdk_v5_1.default({
-                SecretId: core.getInput('secret_id'),
-                SecretKey: core.getInput('secret_key'),
-                Domain: core.getInput('accelerate') === 'true'
-                    ? '{Bucket}.cos.accelerate.myqcloud.com'
-                    : undefined
-            }),
-            bucket: core.getInput('cos_bucket'),
-            region: core.getInput('cos_region'),
-            localPath: core.getInput('local_path'),
-            remotePath: core.getInput('remote_path'),
-            clean: core.getInput('clean') === 'true'
-        };
-        process(cos).catch(reason => {
-            core.setFailed(`fail to upload files to cos: ${reason.message}`);
-        });
-    });
-}
-run();
+exports.upload = upload;
 
 
 /***/ }),

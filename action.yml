@@ -16,6 +16,10 @@ inputs:
   cos_region:
     description: 'COS bucket region'
     required: true
+  type:
+    description: 'COS type'
+    required: false
+    default: 'upload'
   local_path:
     description: 'Local path to be uploaded to COS. Directory or file is allowed'
     required: true
