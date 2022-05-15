@@ -26,13 +26,30 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.findDeletedFiles = exports.collectRemoteFiles = exports.listFilesOnCOS = exports.collectLocalFiles = exports.walKRemote = exports.walk = void 0;
+exports.findDeletedFiles = exports.collectRemoteFiles = exports.listFilesOnCOS = exports.collectLocalFiles = exports.walKRemote = exports.walk = exports.mkdir = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const path_1 = __importDefault(__nccwpck_require__(5622));
+function isFile(path) {
+    const _paths = path.split('/');
+    console.log(_paths[_paths.length - 1], _paths[_paths.length - 1].includes('.'));
+    return _paths[_paths.length - 1].includes('.');
+}
+function mkdir(path) {
+    let dir = path;
+    if (isFile(path)) {
+        let filepath = path.split('/');
+        dir = filepath.splice(0, filepath.length - 1).join('/');
+        dir = dir.startsWith('/') ? dir : `/${dir}`;
+    }
+    if (!fs_1.default.existsSync(dir)) {
+        fs_1.default.mkdirSync(dir, { recursive: true });
+    }
+}
+exports.mkdir = mkdir;
 function walk(path, callback) {
     var e_1, _a;
     return __awaiter(this, void 0, void 0, function* () {
-        if (path.includes('.') || !fs_1.default.statSync(path).isDirectory()) {
+        if (isFile(path)) {
             return yield callback(path);
         }
         const dir = yield fs_1.default.promises.opendir(path);
@@ -54,12 +71,12 @@ function walk(path, callback) {
 exports.walk = walk;
 function walKRemote(cos, path, callback) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (path.includes('.') || !fs_1.default.statSync(path).isDirectory()) {
-            const { Contents } = yield (0, exports.listFilesOnCOS)(Object.assign(Object.assign({}, cos), { remotePath: path }));
+        if (isFile(path)) {
             return yield callback(path);
         }
         const { Contents } = yield (0, exports.listFilesOnCOS)(Object.assign(Object.assign({}, cos), { remotePath: path }));
-        yield Promise.allSettled(Contents.map(c => walKRemote(cos, c.Key, callback)));
+        const files = Contents.map(c => c.Key).filter(f => isFile(f));
+        return yield Promise.all(files.map(c => walKRemote(cos, c, callback)));
     });
 }
 exports.walKRemote = walKRemote;
@@ -67,7 +84,7 @@ const collectLocalFiles = (cos) => __awaiter(void 0, void 0, void 0, function* (
     const root = cos.localPath;
     const files = new Set();
     yield walk(root, path => {
-        files.add(path.split(path_1.default.sep).pop());
+        files.add(path.replace(cos.localPath, ''));
     });
     return files;
 });
@@ -91,10 +108,8 @@ const listFilesOnCOS = (cos) => {
 exports.listFilesOnCOS = listFilesOnCOS;
 const collectRemoteFiles = (cos) => __awaiter(void 0, void 0, void 0, function* () {
     const files = new Set();
-    let data;
-    let nextMarker = null;
     yield walKRemote(cos, cos.remotePath, path => {
-        files.add(path.split(path_1.default.sep).pop());
+        files.add(path.replace(cos.remotePath, ''));
     });
     return files;
 });
@@ -163,8 +178,8 @@ const dowloadFileFormCOS = (cos, path) => __awaiter(void 0, void 0, void 0, func
     }
     const remoteFilePath = path_1.default.join(remotePath, path);
     const localFilePath = path_1.default.join(cos.localPath, path);
+    (0, common_1.mkdir)(localFilePath);
     return new Promise((resolve, reject) => {
-        fs_1.default.writeFileSync(path_1.default.join(cos.localPath, path), '');
         cos.cli.getObject({
             Bucket: cos.bucket,
             Region: cos.region,
@@ -219,9 +234,7 @@ const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0,
 function dowload(cos) {
     return __awaiter(this, void 0, void 0, function* () {
         const remoteFiles = yield (0, common_1.collectRemoteFiles)(cos);
-        if (!fs_1.default.existsSync(cos.localPath)) {
-            fs_1.default.mkdirSync(cos.localPath, { recursive: true });
-        }
+        (0, common_1.mkdir)(cos.localPath);
         console.log(remoteFiles.size, 'files to be dowload');
         let cleanedFilesCount = 0;
         if (cos.clean) {

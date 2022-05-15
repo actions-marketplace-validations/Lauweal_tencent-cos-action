@@ -1,7 +1,12 @@
 import * as core from '@actions/core'
 import _path from 'path'
 import fs from 'fs'
-import {collectLocalFiles, collectRemoteFiles, findDeletedFiles} from './common'
+import {
+  collectLocalFiles,
+  collectRemoteFiles,
+  findDeletedFiles,
+  mkdir
+} from './common'
 import {IOptions} from './interface'
 
 const dowloadFileFormCOS = async (cos: IOptions, path: string) => {
@@ -13,8 +18,8 @@ const dowloadFileFormCOS = async (cos: IOptions, path: string) => {
 
   const remoteFilePath = _path.join(remotePath, path)
   const localFilePath = _path.join(cos.localPath, path)
+  mkdir(localFilePath)
   return new Promise((resolve, reject) => {
-    fs.writeFileSync(_path.join(cos.localPath, path), '')
     cos.cli.getObject(
       {
         Bucket: cos.bucket,
@@ -83,9 +88,7 @@ const cleanDeleteFiles = async (cos: IOptions, deleteFiles: Set<string>) => {
 
 export async function dowload(cos: IOptions) {
   const remoteFiles = await collectRemoteFiles(cos)
-  if (!fs.existsSync(cos.localPath)) {
-    fs.mkdirSync(cos.localPath, {recursive: true})
-  }
+  mkdir(cos.localPath)
   console.log(remoteFiles.size, 'files to be dowload')
   let cleanedFilesCount = 0
   if (cos.clean) {
