@@ -34,7 +34,7 @@ jobs:
 
       - name: 📦 Install dependencies
         if: steps.cachepackages.outputs.cache-hit != 'true'
-        run: npm install
+        run: npm install --force
 
       - name: 🚀 Build actions
         run: npm run all
