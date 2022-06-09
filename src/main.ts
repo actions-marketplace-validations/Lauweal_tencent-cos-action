@@ -31,9 +31,13 @@ async function run(): Promise<void> {
     clean: core.getInput('clean') === 'true'
   }
   if (cos.type === 'upload') {
-    upload(cos).catch(reason => {
-      core.setFailed(`fail to upload files to cos: ${reason.message}`)
-    })
+    upload(cos)
+      .then(res => {
+        core.setOutput('path', res)
+      })
+      .catch(reason => {
+        core.setFailed(`fail to upload files to cos: ${reason.message}`)
+      })
   } else {
     dowload(cos).catch(reason => {
       core.setFailed(`fail to dowload files to cos: ${reason.message}`)

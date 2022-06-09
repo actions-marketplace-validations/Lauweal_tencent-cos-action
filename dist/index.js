@@ -318,7 +318,11 @@ function run() {
             clean: core.getInput('clean') === 'true'
         };
         if (cos.type === 'upload') {
-            (0, upload_1.upload)(cos).catch(reason => {
+            (0, upload_1.upload)(cos)
+                .then(res => {
+                core.setOutput('path', res);
+            })
+                .catch(reason => {
                 core.setFailed(`fail to upload files to cos: ${reason.message}`);
             });
         }
@@ -419,12 +423,17 @@ const uploadFiles = (cos, localFiles) => __awaiter(void 0, void 0, void 0, funct
     const size = localFiles.size;
     let index = 0;
     let percent = 0;
+    let paths = [];
     for (const file of localFiles) {
-        yield uploadFileToCOS(cos, file);
+        const data = yield uploadFileToCOS(cos, file);
+        if (data && data.Location) {
+            paths.push(`https://${data.Location}`);
+        }
         index++;
         percent = parseInt(((index / size) * 100));
         console.log(`>> [${index}/${size}, ${percent}%] uploaded ${path_1.default.join(cos.localPath, file)}`);
     }
+    return paths.join(',');
 });
 const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0, function* () {
     const size = deleteFiles.size;
@@ -440,7 +449,7 @@ const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0,
 const upload = (cos) => __awaiter(void 0, void 0, void 0, function* () {
     const localFiles = yield (0, common_1.collectLocalFiles)(cos);
     console.log(localFiles.size, 'files to be uploaded');
-    yield uploadFiles(cos, localFiles);
+    const files = yield uploadFiles(cos, localFiles);
     let cleanedFilesCount = 0;
     if (cos.clean) {
         const remoteFiles = yield (0, common_1.collectRemoteFiles)(cos);
@@ -456,6 +465,8 @@ const upload = (cos) => __awaiter(void 0, void 0, void 0, function* () {
         cleanedFilesMessage = `, cleaned ${cleanedFilesCount} files`;
     }
     console.log(`uploaded ${localFiles.size} files${cleanedFilesMessage}`);
+    console.log(`>> ${files}`);
+    return files;
 });
 exports.upload = upload;
 

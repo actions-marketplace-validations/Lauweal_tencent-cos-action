@@ -1,15 +1,14 @@
 import * as core from '@actions/core'
+import COS from 'cos-nodejs-sdk-v5'
 import fs from 'fs'
 import _path from 'path'
-import {
-  collectLocalFiles,
-  collectRemoteFiles,
-  findDeletedFiles,
-  walk
-} from './common'
+import {collectLocalFiles, collectRemoteFiles, findDeletedFiles} from './common'
 import {IOptions} from './interface'
 
-const uploadFileToCOS = async (cos: IOptions, path: string) => {
+const uploadFileToCOS = async (
+  cos: IOptions,
+  path: string
+): Promise<COS.PutObjectResult> => {
   core.info(`UPLOAD FILE ----> ${path}`)
   let localPath = cos.localPath
   if (localPath.includes('.')) {
@@ -58,8 +57,12 @@ const uploadFiles = async (cos: IOptions, localFiles: Set<string>) => {
   const size = localFiles.size
   let index = 0
   let percent = 0
+  let paths = []
   for (const file of localFiles) {
-    await uploadFileToCOS(cos, file)
+    const data = await uploadFileToCOS(cos, file)
+    if (data && data.Location) {
+      paths.push(`https://${data.Location}`)
+    }
     index++
     percent = parseInt(((index / size) * 100) as any)
     console.log(
@@ -69,6 +72,7 @@ const uploadFiles = async (cos: IOptions, localFiles: Set<string>) => {
       )}`
     )
   }
+  return paths.join(',')
 }
 
 const cleanDeleteFiles = async (cos: IOptions, deleteFiles: Set<string>) => {
@@ -91,7 +95,7 @@ const cleanDeleteFiles = async (cos: IOptions, deleteFiles: Set<string>) => {
 export const upload = async (cos: IOptions) => {
   const localFiles = await collectLocalFiles(cos)
   console.log(localFiles.size, 'files to be uploaded')
-  await uploadFiles(cos, localFiles)
+  const files = await uploadFiles(cos, localFiles)
   let cleanedFilesCount = 0
   if (cos.clean) {
     const remoteFiles = await collectRemoteFiles(cos)
@@ -107,4 +111,6 @@ export const upload = async (cos: IOptions) => {
     cleanedFilesMessage = `, cleaned ${cleanedFilesCount} files`
   }
   console.log(`uploaded ${localFiles.size} files${cleanedFilesMessage}`)
+  console.log(`>> ${files}`)
+  return files
 }
