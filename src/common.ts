@@ -51,7 +51,12 @@ export const collectLocalFiles = async (cos: IOptions) => {
   const root = cos.localPath
   const files = new Set<string>()
   await walk(root, path => {
-    files.add(path.replace(cos.localPath, ''))
+    if (isFile(cos.localPath)) {
+      const _paths = path.split('/')
+      files.add(_paths[_paths.length - 1])
+    } else {
+      files.add(path.replace(cos.localPath, ''))
+    }
   })
   return files
 }
