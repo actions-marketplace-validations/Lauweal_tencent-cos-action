@@ -6,8 +6,8 @@ on:
       - "v*"
 
 jobs:
-  create-release:
-    name: create-release
+  build:
+    name: build
     runs-on: macos-latest
     steps:
       - name: 🏗 Setup repo
@@ -38,6 +38,43 @@ jobs:
 
       - name: 🚀 Build actions
         run: npm run all
+
+  test: # make sure the action works on a clean machine without building
+    name: test
+    runs-on: macos-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v2
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+          cache: npm
+
+      - uses: ./
+        with:
+          secret_id: ${{ secrets.SECRET_ID }}
+          secret_key: ${{ secrets.SECRET_KEY }}
+          cos_bucket: 'samu-1253579870'
+          cos_region: 'ap-nanjing'
+          local_path: 'src/common.ts'
+          remote_path: 'action-test/tencent-cos-upload/'
+          clean: true
+
+  publish:
+    needs: ['test', 'build']
+    name: publish
+    runs-on: macos-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v2
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+          cache: npm
 
       - name: 🚀 Create Release
         id: createRelease

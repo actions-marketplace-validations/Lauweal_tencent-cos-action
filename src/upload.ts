@@ -23,7 +23,7 @@ const uploadFileToCOS = async (
         StorageClass: 'STANDARD',
         Body: fs.createReadStream(_path.join(localPath, path))
       },
-      function (err, data) {
+      function (err: any, data) {
         if (err) {
           return reject(err)
         } else {
@@ -42,7 +42,7 @@ const deleteFileFromCOS = (cos: IOptions, path: string) => {
         Region: cos.region,
         Key: _path.join(cos.remotePath, path)
       },
-      function (err, data) {
+      function (err: any, data: unknown) {
         if (err) {
           return reject(err)
         } else {
