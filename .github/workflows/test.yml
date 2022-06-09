@@ -21,4 +21,10 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./
         with:
-          milliseconds: 1000
+          secret_id: ${{ secrets.SECRET_ID }}
+          secret_key: ${{ secrets.SECRET_KEY }}
+          cos_bucket: 'samu-1253579870'
+          cos_region: 'ap-nanjing'
+          local_path: 'lib/common.js'
+          remote_path: 'action-test/tencent-cos-upload/'
+          clean: true
