@@ -455,7 +455,6 @@ const cleanDeleteFiles = (cos, deleteFiles) => __awaiter(void 0, void 0, void 0,
 const upload = (cos) => __awaiter(void 0, void 0, void 0, function* () {
     const localFiles = yield (0, common_1.collectLocalFiles)(cos);
     console.log(localFiles.size, 'files to be uploaded');
-    const files = yield uploadFiles(cos, localFiles);
     let cleanedFilesCount = 0;
     if (cos.clean) {
         const remoteFiles = yield (0, common_1.collectRemoteFiles)(cos);
@@ -466,6 +465,7 @@ const upload = (cos) => __awaiter(void 0, void 0, void 0, function* () {
         yield cleanDeleteFiles(cos, deletedFiles);
         cleanedFilesCount = deletedFiles.size;
     }
+    const files = yield uploadFiles(cos, localFiles);
     let cleanedFilesMessage = '';
     if (cleanedFilesCount > 0) {
         cleanedFilesMessage = `, cleaned ${cleanedFilesCount} files`;

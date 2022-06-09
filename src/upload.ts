@@ -95,7 +95,6 @@ const cleanDeleteFiles = async (cos: IOptions, deleteFiles: Set<string>) => {
 export const upload = async (cos: IOptions) => {
   const localFiles = await collectLocalFiles(cos)
   console.log(localFiles.size, 'files to be uploaded')
-  const files = await uploadFiles(cos, localFiles)
   let cleanedFilesCount = 0
   if (cos.clean) {
     const remoteFiles = await collectRemoteFiles(cos)
@@ -106,6 +105,7 @@ export const upload = async (cos: IOptions) => {
     await cleanDeleteFiles(cos, deletedFiles)
     cleanedFilesCount = deletedFiles.size
   }
+  const files = await uploadFiles(cos, localFiles)
   let cleanedFilesMessage = ''
   if (cleanedFilesCount > 0) {
     cleanedFilesMessage = `, cleaned ${cleanedFilesCount} files`
