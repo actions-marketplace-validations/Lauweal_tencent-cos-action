@@ -27,7 +27,7 @@
   "dependencies": {
     "@actions/core": "^1.6.0",
     "@actions/github": "^5.0.1",
-    "cos-nodejs-sdk-v5": "^2.11.9"
+    "cos-nodejs-sdk-v5": "^2.11.18"
   },
   "devDependencies": {
     "@types/node": "^16.10.5",
